@@ -1,14 +1,25 @@
+import os
+
 import pandas as pd
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from src.clean import clean_products
-from src.clean import clean_products, clean_orders
+
+from src.clean import clean_orders, clean_products
+
+
+load_dotenv()
+
 
 def get_engine():
-    engine = create_engine(
-        "postgresql+psycopg2://prakalp@localhost/opsflow"
+    db_user = os.getenv("DB_USER")
+    db_host = os.getenv("DB_HOST")
+    db_name = os.getenv("DB_NAME")
+    db_port = os.getenv("DB_PORT")
+
+    return create_engine(
+        f"postgresql+psycopg2://{db_user}@{db_host}:{db_port}/{db_name}"
     )
 
-    return engine
 
 def test_connection():
     engine = get_engine()
@@ -16,6 +27,7 @@ def test_connection():
     with engine.connect() as connection:
         result = connection.execute(text("SELECT 1"))
         print("Database connection successful:", result.scalar())
+
 
 def load_customers():
     engine = get_engine()
@@ -33,6 +45,7 @@ def load_customers():
 
     print("Customers loaded successfully")
 
+
 def load_products():
     engine = get_engine()
 
@@ -49,7 +62,8 @@ def load_products():
         index=False
     )
 
-    print("Products loaded successfully")    
+    print("Products loaded successfully")
+
 
 def load_orders():
     engine = get_engine()
@@ -69,6 +83,7 @@ def load_orders():
 
     print("Orders loaded successfully")
 
+
 def load_order_items():
     engine = get_engine()
 
@@ -84,6 +99,7 @@ def load_order_items():
     )
 
     print("Order items loaded successfully")
+
 
 def load_payments():
     engine = get_engine()
@@ -101,7 +117,6 @@ def load_payments():
 
     print("Payments loaded successfully")
 
+
 if __name__ == "__main__":
     test_connection()
-    load_payments()
-

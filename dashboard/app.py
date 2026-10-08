@@ -1,7 +1,13 @@
+import os
+
 import pandas as pd
-import streamlit as st
 import plotly.express as px
+import streamlit as st
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
+
+
+load_dotenv()
 
 
 st.set_page_config(
@@ -15,13 +21,17 @@ st.subheader("Business Operations Analytics Dashboard")
 
 @st.cache_resource
 def get_engine():
+    db_user = os.getenv("DB_USER")
+    db_host = os.getenv("DB_HOST")
+    db_name = os.getenv("DB_NAME")
+    db_port = os.getenv("DB_PORT")
+
     return create_engine(
-        "postgresql+psycopg2://prakalp@localhost/opsflow"
+        f"postgresql+psycopg2://{db_user}@{db_host}:{db_port}/{db_name}"
     )
 
 
 engine = get_engine()
-
 
 total_revenue = pd.read_sql(
     """
@@ -74,10 +84,25 @@ average_order_value = pd.read_sql(
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Total Revenue", f"{total_revenue:,.2f}")
-col2.metric("Delivered Orders", f"{total_orders:,}")
-col3.metric("Unique Customers", f"{total_customers:,}")
-col4.metric("Average Order Value", f"{average_order_value:,.2f}")
+col1.metric(
+    "Total Revenue",
+    f"{total_revenue:,.2f}"
+)
+
+col2.metric(
+    "Delivered Orders",
+    f"{total_orders:,}"
+)
+
+col3.metric(
+    "Unique Customers",
+    f"{total_customers:,}"
+)
+
+col4.metric(
+    "Average Order Value",
+    f"{average_order_value:,.2f}"
+)
 
 monthly_revenue = pd.read_sql(
     """
@@ -94,6 +119,7 @@ monthly_revenue = pd.read_sql(
     engine
 )
 
+
 st.subheader("Monthly Revenue Trend")
 
 revenue_chart = px.line(
@@ -106,7 +132,10 @@ revenue_chart = px.line(
     }
 )
 
-st.plotly_chart(revenue_chart, width="stretch")
+st.plotly_chart(
+    revenue_chart,
+    width="stretch"
+)
 
 payment_breakdown = pd.read_sql(
     """
@@ -124,6 +153,7 @@ payment_breakdown = pd.read_sql(
     engine
 )
 
+
 st.subheader("Payment Method Breakdown")
 
 payment_chart = px.bar(
@@ -136,13 +166,17 @@ payment_chart = px.bar(
     }
 )
 
-st.plotly_chart(payment_chart, width="stretch")
+st.plotly_chart(
+    payment_chart,
+    width="stretch"
+)
 
 delivery_performance = pd.read_sql(
     """
     SELECT
         CASE
-            WHEN order_delivered_customer_date::date <= order_estimated_delivery_date::date
+            WHEN order_delivered_customer_date::date
+                <= order_estimated_delivery_date::date
                 THEN 'On Time'
             ELSE 'Late'
         END AS delivery_status,
@@ -156,6 +190,7 @@ delivery_performance = pd.read_sql(
     engine
 )
 
+
 st.subheader("Delivery Performance")
 
 delivery_chart = px.pie(
@@ -164,7 +199,10 @@ delivery_chart = px.pie(
     values="total_orders"
 )
 
-st.plotly_chart(delivery_chart, width="stretch")
+st.plotly_chart(
+    delivery_chart,
+    width="stretch"
+)
 
 delivery_metrics = pd.read_sql(
     """
@@ -184,7 +222,8 @@ delivery_metrics = pd.read_sql(
         ROUND(
             100.0 *
             COUNT(*) FILTER (
-                WHERE order_delivered_customer_date::date <= order_estimated_delivery_date::date
+                WHERE order_delivered_customer_date::date
+                    <= order_estimated_delivery_date::date
             )
             / COUNT(*),
             2
@@ -197,8 +236,10 @@ delivery_metrics = pd.read_sql(
     engine
 )
 
+
 avg_delivery_days = delivery_metrics.iloc[0]["average_delivery_days"]
 on_time_percentage = delivery_metrics.iloc[0]["on_time_percentage"]
+
 
 col5, col6 = st.columns(2)
 
@@ -228,12 +269,16 @@ monthly_activity = pd.read_sql(
     engine
 )
 
+
 st.subheader("Monthly Orders and Customers")
 
 activity_chart = px.line(
     monthly_activity,
     x="month",
-    y=["total_orders", "unique_customers"],
+    y=[
+        "total_orders",
+        "unique_customers"
+    ],
     labels={
         "month": "Month",
         "value": "Count",
@@ -241,13 +286,21 @@ activity_chart = px.line(
     }
 )
 
+
 activity_chart.for_each_trace(
     lambda trace: trace.update(
         name={
             "total_orders": "Delivered Orders",
             "unique_customers": "Unique Customers"
-        }.get(trace.name, trace.name)
+        }.get(
+            trace.name,
+            trace.name
+        )
     )
 )
 
-st.plotly_chart(activity_chart, width="stretch")
+
+st.plotly_chart(
+    activity_chart,
+    width="stretch"
+)
